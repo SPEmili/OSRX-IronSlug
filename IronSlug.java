@@ -13,10 +13,15 @@ public class IronSlug extends JFrame {
 
     private final JTextPane textPane;
     private final RTFEditorKit rtfKit;
+    private String chosenFile = null;
+    
+    
+    //for about and license thing
+    About about = new About();
     
     //courtesy of WindowBuilder
     public IronSlug() {
-        setTitle("OS/RX IronSlug 0.4");
+        setTitle("OS/RX IronSlug 0.4.1");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -61,10 +66,11 @@ public class IronSlug extends JFrame {
         boldBtn.setFont(boldBtn.getFont().deriveFont(Font.BOLD));
 
         JButton italicBtn = new JButton(new StyledEditorKit.ItalicAction());
-        italicBtn.setText("I");
-        italicBtn.setFont(italicBtn.getFont().deriveFont(Font.ITALIC));
+        italicBtn.setText("i");
+        italicBtn.setFont(italicBtn.getFont().deriveFont(italicBtn.getFont().getStyle() | Font.ITALIC));
 
         JButton underlineBtn = new JButton(new StyledEditorKit.UnderlineAction());
+        underlineBtn.setFont(underlineBtn.getFont().deriveFont(underlineBtn.getFont().getStyle() | Font.BOLD));
         underlineBtn.setText("U");
 
         toolBar.add(boldBtn);
@@ -78,6 +84,7 @@ public class IronSlug extends JFrame {
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
+        JMenu aboutMenu = new JMenu("About");
 
         JMenuItem newItem = new JMenuItem("New");
         newItem.addActionListener(new ActionListener() {
@@ -96,14 +103,25 @@ public class IronSlug extends JFrame {
         JMenuItem saveItem = new JMenuItem("Save RTF...");
         saveItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                saveFile();
+                saveAsFile();
+            }
+        });
+        
+        JMenuItem aboutItem = new JMenuItem("About IronSlug");
+        aboutItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	if(!about.isRunning)
+            		about.main(null);
             }
         });
 
         fileMenu.add(newItem);
         fileMenu.add(openItem);
         fileMenu.add(saveItem);
+        aboutMenu.add(aboutItem);
         menuBar.add(fileMenu);
+        menuBar.add(aboutMenu);
+        
 
         return menuBar;
     }
@@ -118,6 +136,8 @@ public class IronSlug extends JFrame {
                 in = new FileInputStream(file);
                 textPane.setText("");
                 rtfKit.read(in, textPane.getDocument(), 0);
+                chosenFile = file.getAbsolutePath();
+                setTitle(file.getAbsolutePath());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error opening file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             } finally {
@@ -125,31 +145,42 @@ public class IronSlug extends JFrame {
                     try { in.close(); } catch (Exception ignored) {}
                 }
             }
+            
         }
     }
 
     
     //snippet from another project, to be updated and cleaned up in a later version
-    private void saveFile() {
+    private void saveAsFile() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new RTFFileFilter());
-        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = chooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".rtf")) {
-                file = new File(file.getAbsolutePath() + ".rtf");
-            }
-            OutputStream out = null;
-            try {
-                out = new FileOutputStream(file);
-                rtfKit.write(out, textPane.getDocument(), 0, textPane.getDocument().getLength());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error saving file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            } finally {
-                if (out != null) {
-                    try { out.close(); } catch (Exception ignored) {}
+        if(chosenFile == null)
+        {
+        	if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                if (!file.getName().toLowerCase().endsWith(".rtf")) {
+                    file = new File(file.getAbsolutePath() + ".rtf");
+                    chosenFile = file.getAbsolutePath();
                 }
             }
         }
+        saveFile(new File(chosenFile));
+    }
+    
+    private void saveFile(File file)
+    {
+    	OutputStream out = null;
+    	try {
+            out = new FileOutputStream(file);
+            rtfKit.write(out, textPane.getDocument(), 0, textPane.getDocument().getLength());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error saving file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            if (out != null) {
+                try { out.close(); } catch (Exception ignored) {}
+            }
+        }
+    	setTitle(file.getAbsolutePath());
     }
 
     //file filter thing for java 3 (to be moved into its own file)
