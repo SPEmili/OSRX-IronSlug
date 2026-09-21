@@ -1,0 +1,180 @@
+package typewriter;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.rtf.RTFEditorKit;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+
+public class IronSlug extends JFrame {
+
+    private final JTextPane textPane;
+    private final RTFEditorKit rtfKit;
+    
+    //courtesy of WindowBuilder
+    public IronSlug() {
+        setTitle("OS/RX IronSlug 0.4");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        textPane = new JTextPane();
+        rtfKit = new RTFEditorKit();
+        textPane.setEditorKit(rtfKit);
+
+        JScrollPane scrollPane = new JScrollPane(textPane);
+        getContentPane().add(scrollPane, BorderLayout.CENTER);
+
+        getContentPane().add(createToolBar(), BorderLayout.NORTH);
+        setJMenuBar(createMenuBar());
+    }
+
+    //also courtesy of WindowBuilder
+    private JToolBar createToolBar() {
+        JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+
+        //indentation is broken because of copy-pasting from another file
+        Integer[] sizes = new Integer[] {
+                new Integer(10), new Integer(12), new Integer(14), new Integer(16),
+                new Integer(18), new Integer(20), new Integer(24), new Integer(28),
+                new Integer(36), new Integer(48), new Integer(72), new Integer(100)
+            };
+            final JComboBox sizeBox = new JComboBox(sizes);
+            sizeBox.setSelectedItem(new Integer(12));
+            sizeBox.setMaximumSize(new Dimension(80, 25));
+            sizeBox.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    Integer size = (Integer) sizeBox.getSelectedItem();
+                    if (size != null) {
+                        new StyledEditorKit.FontSizeAction("fontSize", size.intValue()).actionPerformed(e);
+                    }
+                }
+            });
+            toolBar.add(sizeBox);
+        
+        
+        JButton boldBtn = new JButton(new StyledEditorKit.BoldAction());
+        boldBtn.setText("B");
+        boldBtn.setFont(boldBtn.getFont().deriveFont(Font.BOLD));
+
+        JButton italicBtn = new JButton(new StyledEditorKit.ItalicAction());
+        italicBtn.setText("I");
+        italicBtn.setFont(italicBtn.getFont().deriveFont(Font.ITALIC));
+
+        JButton underlineBtn = new JButton(new StyledEditorKit.UnderlineAction());
+        underlineBtn.setText("U");
+
+        toolBar.add(boldBtn);
+        toolBar.add(italicBtn);
+        toolBar.add(underlineBtn);
+        
+
+        return toolBar;
+    }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+
+        JMenuItem newItem = new JMenuItem("New");
+        newItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                textPane.setText("");
+            }
+        });
+
+        JMenuItem openItem = new JMenuItem("Open RTF...");
+        openItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                openFile();
+            }
+        });
+
+        JMenuItem saveItem = new JMenuItem("Save RTF...");
+        saveItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                saveFile();
+            }
+        });
+
+        fileMenu.add(newItem);
+        fileMenu.add(openItem);
+        fileMenu.add(saveItem);
+        menuBar.add(fileMenu);
+
+        return menuBar;
+    }
+
+    private void openFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new RTFFileFilter());
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            InputStream in = null;
+            try {
+                in = new FileInputStream(file);
+                textPane.setText("");
+                rtfKit.read(in, textPane.getDocument(), 0);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error opening file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                if (in != null) {
+                    try { in.close(); } catch (Exception ignored) {}
+                }
+            }
+        }
+    }
+
+    
+    //snippet from another project, to be updated and cleaned up in a later version
+    private void saveFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new RTFFileFilter());
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".rtf")) {
+                file = new File(file.getAbsolutePath() + ".rtf");
+            }
+            OutputStream out = null;
+            try {
+                out = new FileOutputStream(file);
+                rtfKit.write(out, textPane.getDocument(), 0, textPane.getDocument().getLength());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error saving file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                if (out != null) {
+                    try { out.close(); } catch (Exception ignored) {}
+                }
+            }
+        }
+    }
+
+    //file filter thing for java 3 (to be moved into its own file)
+    private static class RTFFileFilter extends FileFilter {
+        public boolean accept(File f) {
+            if (f.isDirectory())
+                return true;
+            return f.getName().toLowerCase().endsWith(".rtf");
+        }
+
+        public String getDescription() {
+            return "RTF documents (.rtf)";
+        }
+    }
+
+    
+    //yet another courtesy of WindowBuilder
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } catch (Exception ignored) {}
+                new IronSlug().setVisible(true);
+            }
+        });
+    }
+}
