@@ -2,6 +2,8 @@ package typewriter;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledEditorKit;
 import javax.swing.text.rtf.RTFEditorKit;
 import java.awt.*;
@@ -21,7 +23,7 @@ public class IronSlug extends JFrame {
     
     //courtesy of WindowBuilder
     public IronSlug() {
-        setTitle("OS/RX IronSlug 0.4.1");
+        setTitle("OS/RX IronSlug 0.4.2");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -58,24 +60,75 @@ public class IronSlug extends JFrame {
                     }
                 }
             });
+            
+            final JComboBox fontBox = new JComboBox(ISFontManager.getAvailableFontFamilyNames());
+            fontBox.addActionListener(new ActionListener() {
+            	public void actionPerformed(ActionEvent e) {
+            		// Get the selected font family name from fontBox
+            		String selectedFont = (String) fontBox.getSelectedItem();
+
+            		if (selectedFont != null) {
+            		    // 1. Update rich text attributes for the selected text or caret position
+            		    SimpleAttributeSet attr = new SimpleAttributeSet();
+            		    StyleConstants.setFontFamily(attr, selectedFont);
+            		    
+            		    // Replace 'rtfEditor' with your JTextPane variable name
+            		    textPane.setCharacterAttributes(attr, false);
+            		}
+            	}
+            });
+            fontBox.setMaximumSize(new Dimension(160, 25));
+            fontBox.setSelectedItem("Dialog");
+            toolBar.add(fontBox);
             toolBar.add(sizeBox);
         
         
-        JButton boldBtn = new JButton(new StyledEditorKit.BoldAction());
+        final JButton boldBtn = new JButton(new StyledEditorKit.BoldAction());
         boldBtn.setText("B");
         boldBtn.setFont(boldBtn.getFont().deriveFont(Font.BOLD));
 
-        JButton italicBtn = new JButton(new StyledEditorKit.ItalicAction());
+        final JButton italicBtn = new JButton(new StyledEditorKit.ItalicAction());
         italicBtn.setText("i");
         italicBtn.setFont(italicBtn.getFont().deriveFont(italicBtn.getFont().getStyle() | Font.ITALIC));
 
-        JButton underlineBtn = new JButton(new StyledEditorKit.UnderlineAction());
+        final JButton underlineBtn = new JButton(new StyledEditorKit.UnderlineAction());        
         underlineBtn.setFont(underlineBtn.getFont().deriveFont(underlineBtn.getFont().getStyle() | Font.BOLD));
         underlineBtn.setText("U");
+        
+        
+        Component strut1 = Box.createHorizontalStrut(20);
+        toolBar.add(strut1);
 
         toolBar.add(boldBtn);
         toolBar.add(italicBtn);
         toolBar.add(underlineBtn);
+        
+        Component strut2 = Box.createHorizontalStrut(20);
+        toolBar.add(strut2);
+        
+        JButton btnL = new JButton(new StyledEditorKit.AlignmentAction("Left", StyleConstants.ALIGN_LEFT));
+        JButton btnC = new JButton(new StyledEditorKit.AlignmentAction("Center", StyleConstants.ALIGN_CENTER));
+        JButton btnR = new JButton(new StyledEditorKit.AlignmentAction("Right", StyleConstants.ALIGN_RIGHT));
+        toolBar.add(btnL); toolBar.add(btnC); toolBar.add(btnR);
+ 
+ Component strut3 = Box.createHorizontalStrut(20);
+ toolBar.add(strut3);
+ 
+ JButton btnColor = new JButton("Color");
+ btnColor.addActionListener(new ActionListener() {
+ 	public void actionPerformed(ActionEvent e) {
+ 		Color selectedColor = JColorChooser.showDialog(null, "Select Text Color", Color.BLACK);
+
+ 	    if (selectedColor != null) {
+ 	        SimpleAttributeSet attr = new SimpleAttributeSet();
+ 	        StyleConstants.setForeground(attr, selectedColor);
+
+ 	        // Apply as character attribute to selected text or new text at caret position
+ 	        textPane.setCharacterAttributes(attr, false);
+ 	    }
+ 	}
+ });
+ toolBar.add(btnColor);
         
 
         return toolBar;
@@ -90,6 +143,8 @@ public class IronSlug extends JFrame {
         newItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 textPane.setText("");
+                chosenFile = null;
+                setTitle("IronSlug");
             }
         });
 
@@ -137,7 +192,7 @@ public class IronSlug extends JFrame {
                 textPane.setText("");
                 rtfKit.read(in, textPane.getDocument(), 0);
                 chosenFile = file.getAbsolutePath();
-                setTitle(file.getAbsolutePath());
+                setTitle("OS/RX IronSlug - "+file.getAbsolutePath());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error opening file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             } finally {
@@ -180,7 +235,7 @@ public class IronSlug extends JFrame {
                 try { out.close(); } catch (Exception ignored) {}
             }
         }
-    	setTitle(file.getAbsolutePath());
+    	setTitle("OS/RX IronSlug - "+file.getAbsolutePath());
     }
 
     //file filter thing for java 3 (to be moved into its own file)
